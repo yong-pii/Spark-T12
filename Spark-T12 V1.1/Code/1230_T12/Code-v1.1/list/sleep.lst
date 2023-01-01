@@ -1,0 +1,152 @@
+C51 COMPILER V9.60.0.0   SLEEP                                                             12/31/2022 22:13:21 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SLEEP
+OBJECT MODULE PLACED IN .\list\sleep.obj
+COMPILER INVOKED BY: C:\keil\Keil C51\C51\BIN\C51.EXE sleep.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\SRC) DEBUG OBJECTE
+                    -XTEND PRINT(.\list\sleep.lst) TABS(2) OBJECT(.\list\sleep.obj)
+
+line level    source
+
+   1          #include "sleep.h"
+   2          u16 sleep_io_v;
+   3          bit sleep_fig=0;
+   4          u16 sleep_time_s = 0, set_sleep_time = 5; //休眠计时，设置休眠时间
+   5          extern PWMx_Duty PWMA_Duty;
+   6          /***********************************************************
+   7          *@fuction :sleep_PWM_RST
+   8          *@brief   :关闭PWM发生器
+   9          *@param   :--
+  10          *@return  :void
+  11          *@author  :--xptx
+  12          *@date    :2022-10-24
+  13          ***********************************************************/
+  14          void sleep_PWM_RST(void)
+  15          {
+  16   1          PWMx_InitDefine   PWMx_InitStructure;
+  17   1          PWMx_InitStructure.PWM2_Mode       =  CCMRn_PWM_MODE1;  //模式,   CCMRn_FREEZE,CCMRn_MATCH_VALID,CCMRn_MA
+             -TCH_INVALID,CCMRn_ROLLOVER,CCMRn_FORCE_INVALID,CCMRn_FORCE_VALID,CCMRn_PWM_MODE1,CCMRn_PWM_MODE2
+  18   1          PWMx_InitStructure.PWM2_SetPriority  = Priority_1;      //指定中断优先级(低到高) Priority_0,Priority_1,Pr
+             -iority_2,Priority_3
+  19   1          PWMx_InitStructure.PWM_Period      = 65535;             //周期时间,   0~65535    约11.6khz
+  20   1          PWMx_InitStructure.PWM2_Duty       = PWMA_Duty.PWM2_Duty; //PWM2占空比时间, 0~Period
+  21   1          PWMx_InitStructure.PWM_DeadTime    = 0;               //死区发生器设置, 0~255
+  22   1          PWMx_InitStructure.PWM_EnoSelect   = ENO2P;//ENO1P | ENO1N | ENO2P | ENO2N | ENO3P | ENO3N | ENO4P | E
+             -NO4N;  //输出通道选择,  ENO1P,ENO1N,ENO2P,ENO2N,ENO3P,ENO3N,ENO4P,ENO4N / ENO5P,ENO6P,ENO7P,ENO8P
+  23   1          PWMx_InitStructure.PWM_PS_SW       = PWM2_SW_P12_P13;//PWM1_SW_P60_P61| PWM2_SW_P62_P63 | PWM3_SW_P64_
+             -P65 | PWM4_SW_P66_P67;  //切换端口,   PWM1_SW_P10_P11,PWM1_SW_P20_P21,PWM1_SW_P60_P61
+  24   1          PWMx_InitStructure.PWM_CC2Enable   = DISABLE;       //开启PWM2P输入捕获/比较输出,  ENABLE,DISABLE
+  25   1          PWMx_InitStructure.PWM_MainOutEnable = DISABLE;       //主输出使能, ENABLE,DISABLE
+  26   1          PWMx_InitStructure.PWM_CEN_Enable   = DISABLE;        //使能计数器, ENABLE,DISABLE
+  27   1          PWM_Configuration(PWMA, &PWMx_InitStructure);       //初始化PWM,  PWMA,PWMB
+  28   1      
+  29   1      }
+  30          
+  31          /***********************************************************
+  32          *@fuction :sleep_PWM_SET
+  33          *@brief   :开启PWM发生器
+  34          *@param   :--
+  35          *@return  :void
+  36          *@author  :--xptx
+  37          *@date    :2022-10-24
+  38          ***********************************************************/
+  39          
+  40          void sleep_PWM_SET(void)
+  41          {
+  42   1          PWMx_InitDefine   PWMx_InitStructure;
+  43   1      
+  44   1          PWMx_InitStructure.PWM2_Mode    = CCMRn_PWM_MODE1;  //模式,   CCMRn_FREEZE,CCMRn_MATCH_VALID,CCMRn_MATCH
+             -_INVALID,CCMRn_ROLLOVER,CCMRn_FORCE_INVALID,CCMRn_FORCE_VALID,CCMRn_PWM_MODE1,CCMRn_PWM_MODE2
+  45   1          PWMx_InitStructure.PWM2_SetPriority  = Priority_1;      //指定中断优先级(低到高) Priority_0,Priority_1,Pr
+             -iority_2,Priority_3
+  46   1          PWMx_InitStructure.PWM_Period   = 65535;              //周期时间,   0~65535    约11.6khz
+  47   1          PWMx_InitStructure.PWM2_Duty    = PWMA_Duty.PWM2_Duty;  //PWM2占空比时间, 0~Period
+  48   1          PWMx_InitStructure.PWM_DeadTime = 0;                //死区发生器设置, 0~255
+C51 COMPILER V9.60.0.0   SLEEP                                                             12/31/2022 22:13:21 PAGE 2   
+
+  49   1          PWMx_InitStructure.PWM_EnoSelect   = ENO2P;//ENO1P | ENO1N | ENO2P | ENO2N | ENO3P | ENO3N | ENO4P | E
+             -NO4N;  //输出通道选择,  ENO1P,ENO1N,ENO2P,ENO2N,ENO3P,ENO3N,ENO4P,ENO4N / ENO5P,ENO6P,ENO7P,ENO8P
+  50   1          PWMx_InitStructure.PWM_PS_SW       = PWM2_SW_P12_P13;//PWM1_SW_P60_P61| PWM2_SW_P62_P63 | PWM3_SW_P64_
+             -P65 | PWM4_SW_P66_P67;  //切换端口,   PWM1_SW_P10_P11,PWM1_SW_P20_P21,PWM1_SW_P60_P61
+  51   1          PWMx_InitStructure.PWM_CC2Enable   = ENABLE;        //开启PWM2P输入捕获/比较输出,  ENABLE,DISABLE
+  52   1          PWMx_InitStructure.PWM_MainOutEnable = ENABLE;        //主输出使能, ENABLE,DISABLE
+  53   1          PWMx_InitStructure.PWM_CEN_Enable   = ENABLE;       //使能计数器, ENABLE,DISABLE
+  54   1          PWM_Configuration(PWMA, &PWMx_InitStructure);       //初始化PWM,  PWMA,PWMB
+  55   1      
+  56   1      }
+  57          
+  58          /***********************************************************
+  59          *@fuction :sleep_show
+  60          *@brief   :
+  61          *@param   :--
+  62          *@return  :void
+  63          *@author  :--xptx
+  64          *@date    :2022-10-24
+  65          ***********************************************************/
+  66          
+  67          void sleep_show(void)
+  68          {
+  69   1          static u16 i;
+  70   1        i+=10;
+  71   1            if(sleep_io_v >= 28) sleep_time_s = 0; //电压超阈值说明烙铁发生动作，休眠计时清零
+  72   1            
+  73   1            if((i % 1000) == 0)
+  74   1            {
+  75   2              OLED_Clear();//清屏
+  76   2              OLED_ShowChinese( i/100 + 0, 1, 6, 12); //休
+  77   2              OLED_ShowChinese(i/100 + 14, 1, 7, 12); //眠
+  78   2              OLED_ShowChinese(i/100 + 28, 1, 12, 12); //中
+  79   2            }
+  80   1            delay_ms(10);
+  81   1            
+  82   1          if(i>=12001) i=0;
+  83   1      }
+  84          
+  85          
+  86          
+  87          /***********************************************************
+  88          *@fuction :sleep_mode
+  89          *@brief   :休眠模式
+  90          *@param   :--
+  91          *@return  :void
+  92          *@author  :--xptx
+  93          *@date    :2022-10-24
+  94          ***********************************************************/
+  95          
+  96          void sleep_mode(void)
+  97          {
+  98   1          OLED_Clear();//清屏
+  99   1          sleep_PWM_RST();  //关闭PWM
+ 100   1        sleep_fig=1; //休眠标志位置一
+ 101   1          P12=0;  //拉低pwm输出IO口
+ 102   1          while(1)
+ 103   1          {
+ 104   2              sleep_show();  //休眠显示界面
+ 105   2              if(sleep_io_v >= 28) sleep_time_s = 0; //电压超阈值说明烙铁发生动作，休眠计时清零
+ 106   2      
+ 107   2              if((sleep_time_s / 60) < set_sleep_time) //休眠计时小于设定值，检测到动作，计数重置，跳出休眠模式
+ 108   2              {
+C51 COMPILER V9.60.0.0   SLEEP                                                             12/31/2022 22:13:21 PAGE 3   
+
+ 109   3                  sleep_PWM_SET();
+ 110   3                  interface_show();
+ 111   3                  break;
+ 112   3              }
+ 113   2          }
+ 114   1        sleep_fig=0; //休眠结束，标志位置0
+ 115   1      
+ 116   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    391    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      8      34
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,143 @@
+C51 COMPILER V9.60.0.0   ADC                                                               12/29/2022 16:59:27 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ADC
+OBJECT MODULE PLACED IN .\list\ADC.obj
+COMPILER INVOKED BY: C:\keil\Keil C51\C51\BIN\C51.EXE ADC.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\SRC) DEBUG OBJECTEXT
+                    -END PRINT(.\list\ADC.lst) TABS(2) OBJECT(.\list\ADC.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序            */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include  "adc.h"
+  14          
+  15          
+  16          //========================================================================
+  17          // 函数: void ADC_Inilize(ADC_InitTypeDef *ADCx)
+  18          // 描述: ADC初始化程序.
+  19          // 参数: ADCx: 结构参数,请参考adc.h里的定义.
+  20          // 返回: none.
+  21          // 版本: V1.0, 2012-10-22
+  22          //========================================================================
+  23          void  ADC_Inilize(ADC_InitTypeDef *ADCx)
+  24          {
+  25   1        ADCCFG = (ADCCFG & ~ADC_SPEED_2X16T) | ADCx->ADC_Speed;
+  26   1        if(ADCx->ADC_Power == ENABLE) ADC_CONTR |= 0x80;
+  27   1        else              ADC_CONTR &= 0x7F;
+  28   1        if(ADCx->ADC_AdjResult == ADC_RIGHT_JUSTIFIED)  ADCCFG |=  (1<<5);  //AD转换结果右对齐。
+  29   1        else                  ADCCFG &= ~(1<<5);  //AD转换结果左对齐。 
+  30   1        if(ADCx->ADC_Interrupt == ENABLE) EADC = 1;     //中断允许    ENABLE,DISABLE
+  31   1        else                EADC = 0;
+  32   1        if(ADCx->ADC_Priority > Priority_3) return; //错误
+  33   1        ADC_Priority(ADCx->ADC_Priority); //指定中断优先级(低到高) Priority_0,Priority_1,Priority_2,Priority_3
+  34   1      
+  35   1        if(ADCx->ADC_SMPduty > 31)  return; //错误
+  36   1        if(ADCx->ADC_CsSetup > 1) return; //错误
+  37   1        if(ADCx->ADC_CsHold > 3)  return; //错误
+  38   1        P_SW2 |= 0x80;
+  39   1        ADCTIM = (ADCx->ADC_CsSetup << 7) | (ADCx->ADC_CsHold << 5) | ADCx->ADC_SMPduty ;   //设置 ADC 内部时序，A
+             -DC采样时间建议设最大值
+  40   1        P_SW2 &= 0x7f;
+  41   1      }
+  42          
+  43          
+  44          //========================================================================
+  45          // 函数: void ADC_PowerControl(u8 pwr)
+  46          // 描述: ADC电源控制程序.
+  47          // 参数: pwr: 电源控制,ENABLE或DISABLE.
+  48          // 返回: none.
+  49          // 版本: V1.0, 2012-10-22
+  50          //========================================================================
+  51          void  ADC_PowerControl(u8 pwr)
+  52          {
+  53   1        if(pwr == ENABLE) ADC_CONTR |= 0x80;
+C51 COMPILER V9.60.0.0   ADC                                                               12/29/2022 16:59:27 PAGE 2   
+
+  54   1        else        ADC_CONTR &= 0x7f;
+  55   1      }
+  56          
+  57          //========================================================================
+  58          // 函数: u16  Get_ADCResult(u8 channel)
+  59          // 描述: 查询法读一次ADC结果.
+  60          // 参数: channel: 选择要转换的ADC.
+  61          // 返回: ADC结果.
+  62          // 版本: V1.0, 2012-10-22
+  63          //========================================================================
+  64          u16 Get_ADCResult(u8 channel) //channel = 0~15
+  65          {
+  66   1        u16 adc;
+  67   1        u8  i;
+  68   1      
+  69   1        if(channel > ADC_CH15)  return  4096; //错误,返回4096,调用的程序判断  
+  70   1        ADC_RES = 0;
+  71   1        ADC_RESL = 0;
+  72   1      
+  73   1        ADC_CONTR = (ADC_CONTR & 0xf0) | ADC_START | channel; 
+  74   1        NOP(10);      //对ADC_CONTR操作后等待会儿再访问
+  75   1      
+  76   1        for(i=0; i<250; i++)    //超时
+  77   1        {
+  78   2          if(ADC_CONTR & ADC_FLAG)
+  79   2          {
+  80   3            ADC_CONTR &= ~ADC_FLAG;
+  81   3            if(ADCCFG &  (1<<5))    //转换结果右对齐。 
+  82   3            {
+  83   4              adc = ((u16)ADC_RES << 8) | ADC_RESL;
+  84   4            }
+  85   3            else    //转换结果左对齐。 
+  86   3            {
+  87   4              #if ADC_RES_12BIT==1
+  88   4                adc = (u16)ADC_RES;
+  89   4                adc = (adc << 4) | ((ADC_RESL >> 4)&0x0f);
+  90   4              #else
+                        adc = (u16)ADC_RES;
+                        adc = (adc << 2) | ((ADC_RESL >> 6)&0x03);
+                      #endif
+  94   4            }
+  95   3            return  adc;
+  96   3          }
+  97   2        }
+  98   1        return  4096; //错误,返回4096,调用的程序判断
+  99   1      }
+ 100          
+ 101          
+ 102          //========================================================================
+ 103          // 函数: void ADC_int(void) interrupt ADC_VECTOR
+ 104          // 描述: ADC中断函数.
+ 105          // 参数: none.
+ 106          // 返回: none.
+ 107          // 版本: V1.0, 2012-10-22
+ 108          //========================================================================
+ 109          void ADC_int (void) interrupt ADC_VECTOR
+ 110          {
+ 111   1        ADC_CONTR &= ~ADC_FLAG;
+ 112   1      }
+ 113          
+ 114          
+
+C51 COMPILER V9.60.0.0   ADC                                                               12/29/2022 16:59:27 PAGE 3   
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    348    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       2
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,165 @@
+C51 COMPILER V9.60.0.0   SPARK_T12_PID                                                     12/29/2022 16:59:29 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE SPARK_T12_PID
+OBJECT MODULE PLACED IN .\list\Spark_T12_PID.obj
+COMPILER INVOKED BY: C:\keil\Keil C51\C51\BIN\C51.EXE Spark_T12_PID.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\SRC) DEBUG
+                    - OBJECTEXTEND PRINT(.\list\Spark_T12_PID.lst) TABS(2) OBJECT(.\list\Spark_T12_PID.obj)
+
+line level    source
+
+   1          #include "Spark_T12_PID.h"
+   2          #include <math.h>
+   3          /**
+   4              Kp:比例参数    Ek:本次偏差值   Ek_1:上次偏差值   Ek_2:上上次偏差值
+   5              Ti:积分时间    T:采样时间      Td:微分时间
+   6          **/
+   7          h16 Kp = 150, Ti = 5, T = 8, Td = 2, Ek;
+   8          static h16 Ek_1, Ek_2 ;
+   9          u16 present_temp, expect_temp = 300; //当前温度，期望温度
+  10          
+  11          
+  12          /***********************************************************
+  13          *@fuction :PID
+  14          *@brief   :增量式PID
+  15          *@param   :E:当前值  K:期望值
+  16          *@return  :Output：要调整的占空比。
+  17          *@author  :--xptx
+  18          *@date    :2022-10-08
+  19          ***********************************************************/
+  20          
+  21          u16 PID(u16 E, u16 K)
+  22          {
+  23   1          h16 Output;
+  24   1          Ek = E - K;     //计算本次偏差，当前值-期望值
+  25   1          Output = Kp * (Ek - Ek_1) + Kp * (T / Ti) * Ek + Kp * (Td / T) * (Ek - 2 * Ek_1 + Ek_2) ;  //计算本次P
+             -ID
+  26   1          Ek_2 = Ek_1;    //更新上上次偏差
+  27   1          Ek_1 = Ek;      //更新上一次偏差
+  28   1          Output = abs(Output); //
+  29   1          //if(Output<0) Output=0;
+  30   1          return Output;  //返回计算结果
+  31   1      }
+  32          
+  33          
+  34          
+  35          //void data_send(u16 j)  //4位数据发送
+  36          //{
+  37          //    PrintString1("\r\n");
+  38          //    //    PrintString1("T12的ADC值为:\r\n");    //UART1发送一个字符串
+  39          //    //    //Get_ADCResult(i);   //参数0~15,查询方式做一次ADC, 丢弃一次
+  40          //    //    //j = 3300 / 1024 * j;
+  41          //    //    TX1_write2buff('A');
+  42          //    //    TX1_write2buff('D');
+  43          //    //    //TX1_write2buff(i+'0');
+  44          //    //    TX1_write2buff('=');
+  45          //    TX1_write2buff(j / 1000 + '0');
+  46          //    TX1_write2buff(j % 1000 / 100 + '0');
+  47          //    TX1_write2buff(j % 100 / 10 + '0');
+  48          //    TX1_write2buff(j % 10 + '0');
+  49          //    //    TX1_write2buff(' ');
+  50          //    //    TX1_write2buff(' ');
+  51          
+  52          //    PrintString1("\n");
+  53          //}
+C51 COMPILER V9.60.0.0   SPARK_T12_PID                                                     12/29/2022 16:59:29 PAGE 2   
+
+  54          
+  55          /***********************************************************
+  56          *@fuction :order_fitting
+  57          *@brief   :数据处理函数，对ADC输出的电压进行一次4阶多项式拟合，输出对应温度
+  58          *@param   :--Thermocouple voltage of T12
+  59          *@return  :temp
+  60          *@author  :--xptx
+  61          *@date    :2022-11-10
+  62          ***********************************************************/
+  63          
+  64          u16 order_fitting(u16 dat)
+  65          {
+  66   1          u16 temp;  //定义一个变量
+  67   1          temp = 2 * pow(10, -11) * pow(dat, 4) + 2 * pow(10, -8) * pow(dat, 3) - 0.0004 * pow(dat, 2) + 0.7985 
+             -* dat + 24.271 ;  //4阶多项式拟合
+  68   1          return temp; //返回
+  69   1      }
+  70          /***********************************************************
+  71          *@fuction :filter
+  72          *@brief   :滤波n次，去掉一个最大值，去掉一个最小值，余下的求平均值
+  73          *@param   :--u8 Num 滤波次数  Vcc_Adc 内部16通道的ADC值  u16 dat 被滤数据
+  74          *@return  :mean
+  75          *@author  :--xptx
+  76          *@date    :2022-11-11
+  77          ***********************************************************/
+  78          u16 filter(u8 Num)
+  79          { 
+  80   1          u16 temp [20] ; //差值绝对值
+  81   1          u16 max, mini, mean, sum = 0; //最大值 最小值 平均值
+  82   1          u8 i;
+  83   1          u16 Vref; //MCU供电电压/基准电压（mV）
+  84   1          for(i = 0; i < Num; i++)
+  85   1          {
+  86   2              Vref=( 1190 / Get_ADCResult(15) ) * 1024 ;  //求出供电电源电压/基准电压
+  87   2              temp [i] = ( Vref / 1024 ) * Get_ADCResult(0);
+  88   2          }
+  89   1      
+  90   1          max  = temp[0];  //写入初值
+  91   1          mini = temp[0];
+  92   1      
+  93   1          for(i = 0; i < Num; i++) //历遍数组求最大最小值
+  94   1          {
+  95   2              if(max < temp[i])
+  96   2                  max = temp[i];
+  97   2              if(mini > temp[i])
+  98   2                  mini = temp[i];
+  99   2          }
+ 100   1          for(i = 0; i < Num; i++)
+ 101   1          {
+ 102   2              sum += temp[i];
+ 103   2          }
+ 104   1          mean = (sum - max - mini) / (Num - 2);
+ 105   1          return  mean;
+ 106   1      }
+ 107          //u16 filter(u8 Num,u16 Vcc_Adc, u16 dat)
+ 108          //{ 
+ 109          //    u16 temp [20] ; //差值绝对值
+ 110          //    u16 max, mini, mean, sum = 0; //最大值 最小值 平均值
+ 111          //    u8 i;
+ 112          //    u16 Vcc; //MCU供电电压（mV）
+ 113          //    for(i = 0; i < Num; i++)
+ 114          //    {
+C51 COMPILER V9.60.0.0   SPARK_T12_PID                                                     12/29/2022 16:59:29 PAGE 3   
+
+ 115          //      Vcc=1190/1024 * Vcc_Adc;  //求出供电电源电压 
+ 116          //        temp [i] = ( Vcc / 1024 ) * dat;
+ 117          //    }
+ 118          
+ 119          //    max  = temp[0];  //写入初值
+ 120          //    mini = temp[0];
+ 121          
+ 122          //    for(i = 0; i < Num; i++) //历遍数组求最大最小值
+ 123          //    {
+ 124          //        if(max < temp[i])
+ 125          //            max = temp[i];
+ 126          //        if(mini > temp[i])
+ 127          //            mini = temp[i];
+ 128          //    }
+ 129          //    for(i = 0; i < Num; i++)
+ 130          //    {
+ 131          //        sum += temp[i];
+ 132          //    }
+ 133          //    mean = (sum - max - mini) / (Num - 2);
+ 134          //    return  mean;
+ 135          //}
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    884    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     18      50
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

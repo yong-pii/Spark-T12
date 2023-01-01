@@ -1,0 +1,270 @@
+C51 COMPILER V9.60.0.0   TIMER                                                             12/31/2022 21:23:06 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE TIMER
+OBJECT MODULE PLACED IN .\list\timer.obj
+COMPILER INVOKED BY: C:\keil\Keil C51\C51\BIN\C51.EXE timer.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\SRC) DEBUG OBJECTE
+                    -XTEND PRINT(.\list\timer.lst) TABS(2) OBJECT(.\list\timer.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* Èç¹ûÒªÔÚ³ÌÐòÖÐÊ¹ÓÃ´Ë´úÂë,ÇëÔÚ³ÌÐòÖÐ×¢Ã÷Ê¹ÓÃÁËSTCµÄ×ÊÁÏ¼°³ÌÐò            */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          /*************  ¹¦ÄÜËµÃ÷  **************
+  14          
+  15          ±¾ÎÄ¼þÎªSTC8ÏµÁÐµÄ¶¨Ê±Æ÷³õÊ¼»¯ºÍÖÐ¶Ï³ÌÐò,ÓÃ»§¿ÉÒÔÔÚÕâ¸öÎÄ¼þÖÐÐÞ¸Ä×Ô¼ºÐèÒªµÄÖÐ¶Ï³ÌÐò.
+  16          
+  17          ******************************************/
+  18          
+  19          #include  "timer.h"
+  20          #include  "PWM.h"
+  21          
+  22          //#define adc1 Get_ADCResult(1)
+  23          //#include "Spark_T12_PID.h"
+  24          //#include  "beep.h"
+  25          //extern bit fig1;
+  26          //extern beep P37
+  27          
+  28          /*************  ±¾µØ±äÁ¿ÉùÃ÷  **************/
+  29          //bit PWM1_Flag;
+  30          //bit PWM2_Flag;
+  31          //bit PWM3_Flag;
+  32          //bit PWM4_Flag;
+  33          
+  34          /*************  Íâ²¿º¯ÊýºÍ±äÁ¿ÉùÃ÷ *****************/
+  35          extern PWMx_Duty PWMA_Duty;
+  36          extern u16 present_temp, expect_temp; //µ±Ç°ÎÂ¶È£¬ÆÚÍûÎÂ¶È
+  37          extern u16 Ch1_vinput, NTC_temp_v, temp_T12;
+  38          extern bit sleep_fig;
+  39          extern u16 sleep_time_s, set_sleep_time;  //ÐÝÃß¼ÆÊ±
+  40          extern u16 sleep_io_v;    //ÐÝÃßIO¿ÚµçÑ¹
+  41          static u16 temporary_Duty;
+  42          
+  43          
+  44          /********************* Timer0ÖÐ¶Ïº¯Êý 1msÖÐ¶ÏÒ»´Î************************/
+  45          void timer0_int (void) interrupt TIMER0_VECTOR
+  46          {
+  47   1          static u16 i = 0;
+  48   1          i++;
+  49   1          if(i == 10)
+  50   1          {
+  51   2              sleep_io_v = (3300 / 1024) * Get_ADCResult(10); //²âsleepÒý½ÅµçÑ¹
+  52   2              NTC_temp_v = (3300 / 1024) * Get_ADCResult(14) / 1; //¼ÆËãµ±Ç°NTCÎÂ¶È
+  53   2          }
+  54   1      
+C51 COMPILER V9.60.0.0   TIMER                                                             12/31/2022 21:23:06 PAGE 2   
+
+  55   1          if(i == 82)
+  56   1          {
+  57   2              PWMA_Duty.PWM2_Duty = 0;            //Õ¼¿Õ±ÈÇåÁã
+  58   2              UpdatePwm(PWMA, &PWMA_Duty);        //PWM Õ¼¿Õ±ÈÉèÖÃº¯Êý
+  59   2      
+  60   2      
+  61   2          }
+  62   1          if(i == 85)
+  63   1          {
+  64   2              Ch1_vinput = 11 * (3300 / 1024) * Get_ADCResult(1) / 1; //¼ÆËãµ±Ç°¹©µçµçÑ¹
+  65   2              i = 0;
+  66   2      
+  67   2              present_temp = filter(10); //ÂË²¨
+  68   2      
+  69   2              //       Vcc_ref =  ( 1190 / Get_ADCResult(15) ) * 1024 ;
+  70   2              //      present_temp = ( Vcc_ref / 1024 ) * Get_ADCResult(0);
+  71   2      
+  72   2              //  present_temp =Vcc_ref;
+  73   2              //      present_temp =  3300/1024  * Get_ADCResult(0);  (  (1190 * 1024) / Get_ADCResult(15)  )
+  74   2              temp_T12 = present_temp;
+  75   2              present_temp = order_fitting(present_temp);  //ÄâºÏÊä³öÎÂ¶È
+  76   2      
+  77   2              if(present_temp <= 450 && sleep_fig==0)  //ÎÂ¶ÈÏÞÖÆ±£»¤
+  78   2                  PWMA_Duty.PWM2_Duty = PID(present_temp, expect_temp); //¼ÆËã²¢Êä³öÕ¼¿Õ±È
+  79   2              else
+  80   2                  PWMA_Duty.PWM2_Duty = 0;
+  81   2      
+  82   2              if(present_temp < 70)  PWMA_Duty.PWM2_Duty = 58982; //µÍÎÂÏÂADCÎÞ·¨ÕýÈ·¶Á³öÊý¾Ý£¬ÐèÒª¼ÓÈÈµ½Ò»¶¨ÎÂ¶
+             -È¡£
+  83   2      
+  84   2              UpdatePwm(PWMA, &PWMA_Duty);             //PWM Õ¼¿Õ±ÈÉèÖÃº¯Êý
+  85   2          }
+  86   1      }
+  87          
+  88          /********************* Timer1ÖÐ¶Ïº¯Êý--ÐÝÃß¿ØÖÆ *******************2msÖÐ¶ÏÒ»´Î*****/
+  89          void timer1_int (void) interrupt TIMER1_VECTOR
+  90          {
+  91   1          static u16 ms2 = 0;
+  92   1          ms2++;
+  93   1          if(ms2 == 500)
+  94   1          {
+  95   2              sleep_time_s++;    //ÐÝÃß¼ÆÊ±
+  96   2              ms2 = 0;
+  97   2          }
+  98   1          if(sleep_io_v >= 28) sleep_time_s = 0; //µçÑ¹³¬ãÐÖµËµÃ÷ÀÓÌú·¢Éú¶¯×÷£¬ÐÝÃß¼ÆÊ±ÇåÁã
+  99   1          
+ 100   1          if(sleep_time_s >= 65535) sleep_time_s = 60000; //·ÀÒç³ö
+ 101   1      
+ 102   1          //if((sleep_time_s/60)>=set_sleep_time)  sleep_mode();  //¼ÆÊ±Ê±¼ä´óÓÚÉèÖÃÐÝÃßÊ±¼ä£¬½øÈëÐÝÃßÄ£Ê½£¬ÆÚ¼ä
+             -¹Ø±ÕPWM
+ 103   1      }
+ 104          
+ 105          /********************* Timer2ÖÐ¶Ïº¯Êý--·äÃùÆ÷¿ØÖÆ ************************/
+ 106          void timer2_int (void) interrupt TIMER2_VECTOR
+ 107          { 
+ 108   1          beep = !beep;
+ 109   1      }
+ 110          
+ 111          ///********************* Timer3ÖÐ¶Ïº¯Êý************************/
+ 112          //void timer3_int (void) interrupt TIMER3_VECTOR
+ 113          //{
+ 114          //
+C51 COMPILER V9.60.0.0   TIMER                                                             12/31/2022 21:23:06 PAGE 3   
+
+ 115          //}
+ 116          
+ 117          ///********************* Timer4ÖÐ¶Ïº¯Êý************************/
+ 118          //void timer4_int (void) interrupt TIMER4_VECTOR
+ 119          //{
+ 120          //
+ 121          //}
+ 122          
+ 123          
+ 124          //========================================================================
+ 125          // º¯Êý: u8 Timer_Inilize(u8 TIM, TIM_InitTypeDef *TIMx)
+ 126          // ÃèÊö: ¶¨Ê±Æ÷³õÊ¼»¯³ÌÐò.
+ 127          // ²ÎÊý: TIMx: ½á¹¹²ÎÊý,Çë²Î¿¼timer.hÀïµÄ¶¨Òå.
+ 128          // ·µ»Ø: ³É¹¦·µ»Ø0, ¿Õ²Ù×÷·µ»Ø1,´íÎó·µ»Ø2.
+ 129          // °æ±¾: V1.0, 2012-10-22
+ 130          //========================================================================
+ 131          u8  Timer_Inilize(u8 TIM, TIM_InitTypeDef *TIMx)
+ 132          {
+ 133   1          if(TIM > Timer4)  return 1; //¿Õ²Ù×÷
+ 134   1      
+ 135   1          if(TIM == Timer0)
+ 136   1          {
+ 137   2              Timer0_Stop();    //Í£Ö¹¼ÆÊý
+ 138   2              if(TIMx->TIM_Interrupt == ENABLE)   Timer0_InterruptEnable(); //ÔÊÐíÖÐ¶Ï
+ 139   2              else    Timer0_InterruptDisable();  //½ûÖ¹ÖÐ¶Ï
+ 140   2              if(TIMx->TIM_Priority > Priority_3) return 2; //´íÎó
+ 141   2              Timer0_Priority(TIMx->TIM_Priority);  //Ö¸¶¨ÖÐ¶ÏÓÅÏÈ¼¶(µÍµ½¸ß) Priority_0,Priority_1,Priority_2,Pri
+             -ority_3
+ 142   2      
+ 143   2              if(TIMx->TIM_Mode >= TIM_16BitAutoReloadNoMask) return 2; //´íÎó
+ 144   2              TMOD = (TMOD & ~0x30) | TIMx->TIM_Mode; //¹¤×÷Ä£Ê½,0: 16Î»×Ô¶¯ÖØ×°, 1: 16Î»¶¨Ê±/¼ÆÊý, 2: 8Î»×Ô¶¯ÖØ
+             -×°
+ 145   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_12T)  Timer0_12T(); //12T
+ 146   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_1T)   Timer0_1T();  //1T
+ 147   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_Ext)  Timer0_AsCounter(); //¶ÔÍâ¼ÆÊý»ò·ÖÆµ
+ 148   2              else    Timer0_AsTimer(); //¶¨Ê±
+ 149   2              if(TIMx->TIM_ClkOut == ENABLE)  Timer0_CLKO_Enable(); //Êä³öÊ±ÖÓ
+ 150   2              else    Timer0_CLKO_Disable();  //²»Êä³öÊ±ÖÓ
+ 151   2      
+ 152   2              T0_Load(TIMx->TIM_Value);
+ 153   2              if(TIMx->TIM_Run == ENABLE) Timer0_Run(); //¿ªÊ¼ÔËÐÐ
+ 154   2              return  0;    //³É¹¦
+ 155   2          }
+ 156   1      
+ 157   1          if(TIM == Timer1)
+ 158   1          {
+ 159   2              Timer1_Stop();    //Í£Ö¹¼ÆÊý
+ 160   2              if(TIMx->TIM_Interrupt == ENABLE)   Timer1_InterruptEnable(); //ÔÊÐíÖÐ¶Ï
+ 161   2              else    Timer1_InterruptDisable();  //½ûÖ¹ÖÐ¶Ï
+ 162   2              if(TIMx->TIM_Priority > Priority_3) return 2; //´íÎó
+ 163   2              Timer1_Priority(TIMx->TIM_Priority);  //Ö¸¶¨ÖÐ¶ÏÓÅÏÈ¼¶(µÍµ½¸ß) Priority_0,Priority_1,Priority_2,Pri
+             -ority_3
+ 164   2              if(TIMx->TIM_Mode >= TIM_16BitAutoReloadNoMask) return 2; //´íÎó
+ 165   2              TMOD = (TMOD & ~0x30) | TIMx->TIM_Mode; //¹¤×÷Ä£Ê½,0: 16Î»×Ô¶¯ÖØ×°, 1: 16Î»¶¨Ê±/¼ÆÊý, 2: 8Î»×Ô¶¯ÖØ
+             -×°
+ 166   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_12T)  Timer1_12T(); //12T
+ 167   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_1T)   Timer1_1T();  //1T
+ 168   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_Ext)  Timer1_AsCounter(); //¶ÔÍâ¼ÆÊý»ò·ÖÆµ
+ 169   2              else    Timer1_AsTimer(); //¶¨Ê±
+ 170   2              if(TIMx->TIM_ClkOut == ENABLE)  Timer1_CLKO_Enable(); //Êä³öÊ±ÖÓ
+ 171   2              else    Timer1_CLKO_Disable();  //²»Êä³öÊ±ÖÓ
+ 172   2      
+C51 COMPILER V9.60.0.0   TIMER                                                             12/31/2022 21:23:06 PAGE 4   
+
+ 173   2              T1_Load(TIMx->TIM_Value);
+ 174   2              if(TIMx->TIM_Run == ENABLE) Timer1_Run(); //¿ªÊ¼ÔËÐÐ
+ 175   2              return  0;    //³É¹¦
+ 176   2          }
+ 177   1      
+ 178   1          if(TIM == Timer2)   //Timer2,¹Ì¶¨Îª16Î»×Ô¶¯ÖØ×°, ÖÐ¶ÏÎÞÓÅÏÈ¼¶
+ 179   1          {
+ 180   2              Timer2_Stop();  //Í£Ö¹¼ÆÊý
+ 181   2              if(TIMx->TIM_Interrupt == ENABLE)   Timer2_InterruptEnable(); //ÔÊÐíÖÐ¶Ï
+ 182   2              else    Timer2_InterruptDisable();  //½ûÖ¹ÖÐ¶Ï
+ 183   2              if(TIMx->TIM_ClkSource >  TIM_CLOCK_Ext)  return 2;
+ 184   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_12T)  Timer2_12T(); //12T
+ 185   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_1T)   Timer2_1T();  //1T
+ 186   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_Ext)  Timer2_AsCounter(); //¶ÔÍâ¼ÆÊý»ò·ÖÆµ
+ 187   2              else    Timer2_AsTimer();   //¶¨Ê±
+ 188   2              if(TIMx->TIM_ClkOut == ENABLE)  Timer2_CLKO_Enable();   //Êä³öÊ±ÖÓ
+ 189   2              else    Timer2_CLKO_Disable();  //²»Êä³öÊ±ÖÓ
+ 190   2      
+ 191   2              T2_Load(TIMx->TIM_Value);
+ 192   2              if(TIMx->TIM_Run == ENABLE) Timer2_Run(); //¿ªÊ¼ÔËÐÐ
+ 193   2              return  0;    //³É¹¦
+ 194   2          }
+ 195   1      
+ 196   1          if(TIM == Timer3)   //Timer3,¹Ì¶¨Îª16Î»×Ô¶¯ÖØ×°, ÖÐ¶ÏÎÞÓÅÏÈ¼¶
+ 197   1          {
+ 198   2              Timer3_Stop();  //Í£Ö¹¼ÆÊý
+ 199   2              if(TIMx->TIM_Interrupt == ENABLE)   Timer3_InterruptEnable(); //ÔÊÐíÖÐ¶Ï
+ 200   2              else    Timer3_InterruptDisable();  //½ûÖ¹ÖÐ¶Ï
+ 201   2              if(TIMx->TIM_ClkSource >  TIM_CLOCK_Ext)  return 2;
+ 202   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_12T)  Timer3_12T(); //12T
+ 203   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_1T)   Timer3_1T();  //1T
+ 204   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_Ext)  Timer3_AsCounter(); //¶ÔÍâ¼ÆÊý»ò·ÖÆµ
+ 205   2              else    Timer3_AsTimer();   //¶¨Ê±
+ 206   2              if(TIMx->TIM_ClkOut == ENABLE)  Timer3_CLKO_Enable();   //Êä³öÊ±ÖÓ
+ 207   2              else    Timer3_CLKO_Disable();  //²»Êä³öÊ±ÖÓ
+ 208   2      
+ 209   2              T3_Load(TIMx->TIM_Value);
+ 210   2              if(TIMx->TIM_Run == ENABLE) Timer3_Run(); //¿ªÊ¼ÔËÐÐ
+ 211   2              return  0;    //³É¹¦
+ 212   2          }
+ 213   1      
+ 214   1          if(TIM == Timer4)   //Timer3,¹Ì¶¨Îª16Î»×Ô¶¯ÖØ×°, ÖÐ¶ÏÎÞÓÅÏÈ¼¶
+ 215   1          {
+ 216   2              Timer4_Stop();  //Í£Ö¹¼ÆÊý
+ 217   2              if(TIMx->TIM_Interrupt == ENABLE)   Timer4_InterruptEnable(); //ÔÊÐíÖÐ¶Ï
+ 218   2              else    Timer4_InterruptDisable();  //½ûÖ¹ÖÐ¶Ï
+ 219   2              if(TIMx->TIM_ClkSource >  TIM_CLOCK_Ext)  return 2;
+ 220   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_12T)  Timer4_12T(); //12T
+ 221   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_1T)   Timer4_1T();  //1T
+ 222   2              if(TIMx->TIM_ClkSource == TIM_CLOCK_Ext)  Timer4_AsCounter(); //¶ÔÍâ¼ÆÊý»ò·ÖÆµ
+ 223   2              else    Timer4_AsTimer();   //¶¨Ê±
+ 224   2              if(TIMx->TIM_ClkOut == ENABLE)  Timer4_CLKO_Enable();   //Êä³öÊ±ÖÓ
+ 225   2              else    Timer4_CLKO_Disable();  //²»Êä³öÊ±ÖÓ
+ 226   2      
+ 227   2              T4_Load(TIMx->TIM_Value);
+ 228   2              if(TIMx->TIM_Run == ENABLE) Timer4_Run(); //¿ªÊ¼ÔËÐÐ
+ 229   2              return  0;    //³É¹¦
+ 230   2          }
+ 231   1          return 2; //´íÎó
+ 232   1      }
+
+
+C51 COMPILER V9.60.0.0   TIMER                                                             12/31/2022 21:23:06 PAGE 5   
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1281    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      6    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

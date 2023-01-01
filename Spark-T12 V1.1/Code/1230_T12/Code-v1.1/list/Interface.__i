@@ -1,0 +1,1 @@
+"SRC\Interface.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\SRC) DEBUG OBJECTEXTEND PRINT(.\list\Interface.lst) TABS (2) OBJECT(.\list\Interface.obj)

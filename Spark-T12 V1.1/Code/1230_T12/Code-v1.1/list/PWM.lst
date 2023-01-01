@@ -1,0 +1,185 @@
+C51 COMPILER V9.60.0.0   PWM                                                               12/29/2022 16:59:29 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE PWM
+OBJECT MODULE PLACED IN .\list\PWM.obj
+COMPILER INVOKED BY: C:\keil\Keil C51\C51\BIN\C51.EXE PWM.C LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\SRC) DEBUG OBJECTEXT
+                    -END PRINT(.\list\PWM.lst) TABS(2) OBJECT(.\list\PWM.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* Èç¹ûÒªÔÚ³ÌÐòÖÐÊ¹ÓÃ´Ë´úÂë,ÇëÔÚ³ÌÐòÖÐ×¢Ã÷Ê¹ÓÃÁËSTCµÄ×ÊÁÏ¼°³ÌÐò            */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include "PWM.h"
+  14          
+  15          u8 PWM_Configuration(u8 PWM, PWMx_InitDefine *PWMx)
+  16          {
+  17   1        if(PWM == PWMA)
+  18   1        {
+  19   2          EAXSFR();   /* MOVX A,@DPTR/MOVX @DPTR,AÖ¸ÁîµÄ²Ù×÷¶ÔÏóÎªÀ©Õ¹SFR(XSFR) */
+  20   2          
+  21   2      //    if(PWMx->PWM1_SetPriority <= Priority_3)  PWM1_Priority(PWMx->PWM1_SetPriority);  //Ö¸¶¨ÖÐ¶ÏÓÅÏÈ¼¶(µÍµ½¸
+             -ß) Priority_0,Priority_1,Priority_2,Priority_3
+  22   2          if(PWMx->PWM2_SetPriority <= Priority_3)  PWM2_Priority(PWMx->PWM2_SetPriority);  //Ö¸¶¨ÖÐ¶ÏÓÅÏÈ¼¶(µÍµ½¸ß)
+             - Priority_0,Priority_1,Priority_2,Priority_3
+  23   2      //    if(PWMx->PWM3_SetPriority <= Priority_3)  PWM3_Priority(PWMx->PWM3_SetPriority);  //Ö¸¶¨ÖÐ¶ÏÓÅÏÈ¼¶(µÍµ½¸
+             -ß) Priority_0,Priority_1,Priority_2,Priority_3
+  24   2      //    if(PWMx->PWM4_SetPriority <= Priority_3)  PWM4_Priority(PWMx->PWM4_SetPriority);  //Ö¸¶¨ÖÐ¶ÏÓÅÏÈ¼¶(µÍµ½¸
+             -ß) Priority_0,Priority_1,Priority_2,Priority_3
+  25   2          
+  26   2          PWMA_CCER1_Disable();   //¹Ø±ÕËùÓÐÊäÈë²¶»ñ/±È½ÏÊä³ö
+  27   2          PWMA_CCER2_Disable();   //¹Ø±ÕËùÓÐÊäÈë²¶»ñ/±È½ÏÊä³ö
+  28   2          //PWMA_OC1ModeSet(PWMx->PWM1_Mode);   //ÉèÖÃÊä³ö±È½ÏÄ£Ê½
+  29   2          PWMA_OC2ModeSet(PWMx->PWM2_Mode);   //ÉèÖÃÊä³ö±È½ÏÄ£Ê½
+  30   2          //PWMA_OC3ModeSet(PWMx->PWM3_Mode);   //ÉèÖÃÊä³ö±È½ÏÄ£Ê½
+  31   2          //PWMA_OC4ModeSet(PWMx->PWM4_Mode);   //ÉèÖÃÊä³ö±È½ÏÄ£Ê½
+  32   2          if(PWMx->PWM_Reload == ENABLE)  PWMA_OC1_ReloadEnable();  //Êä³ö±È½ÏµÄÔ¤×°ÔØÊ¹ÄÜ
+  33   2          else    PWMA_OC1_RelosdDisable(); //½ûÖ¹Êä³ö±È½ÏµÄÔ¤×°ÔØ
+  34   2          if(PWMx->PWM_Fast == ENABLE)  PWMA_OC1_FastEnable();    //Êä³ö±È½Ï¿ìËÙ¹¦ÄÜÊ¹ÄÜ
+  35   2          else    PWMA_OC1_FastDisable(); //½ûÖ¹Êä³ö±È½Ï¿ìËÙ¹¦ÄÜ
+  36   2          
+  37   2      //    if(PWMx->PWM_CC1Enable == ENABLE) PWMA_CC1E_Enable();     //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  38   2      //    else    PWMA_CC1E_Disable();  //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+  39   2      //    if(PWMx->PWM_CC1NEnable == ENABLE)  PWMA_CC1NE_Enable();  //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  40   2      //    else    PWMA_CC1NE_Disable(); //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+  41   2          if(PWMx->PWM_CC2Enable == ENABLE) PWMA_CC2E_Enable();     //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  42   2          else    PWMA_CC2E_Disable();  //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+  43   2          if(PWMx->PWM_CC2NEnable == ENABLE)  PWMA_CC2NE_Enable();  //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  44   2          else    PWMA_CC2NE_Disable(); //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+  45   2      //    if(PWMx->PWM_CC3Enable == ENABLE) PWMA_CC3E_Enable();     //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  46   2      //    else    PWMA_CC3E_Disable();  //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+  47   2      //    if(PWMx->PWM_CC3NEnable == ENABLE)  PWMA_CC3NE_Enable();  //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  48   2      //    else    PWMA_CC3NE_Disable(); //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+  49   2      //    if(PWMx->PWM_CC4Enable == ENABLE) PWMA_CC4E_Enable();     //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  50   2      //    else    PWMA_CC4E_Disable();  //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+C51 COMPILER V9.60.0.0   PWM                                                               12/29/2022 16:59:29 PAGE 2   
+
+  51   2      //    if(PWMx->PWM_CC4NEnable == ENABLE)  PWMA_CC4NE_Enable();  //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  52   2      //    else    PWMA_CC4NE_Disable(); //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+  53   2          
+  54   2          PWMA_AutoReload(PWMx->PWM_Period);
+  55   2      //    PWMA_Duty1(PWMx->PWM1_Duty);
+  56   2          PWMA_Duty2(PWMx->PWM2_Duty);
+  57   2      //    PWMA_Duty3(PWMx->PWM3_Duty);
+  58   2      //    PWMA_Duty4(PWMx->PWM4_Duty);
+  59   2          
+  60   2          PWMA_CCPCAPreloaded(PWMx->PWM_PreLoad); //²¶»ñ/±È½ÏÔ¤×°ÔØ¿ØÖÆÎ»(¸ÃÎ»Ö»¶Ô¾ßÓÐ»¥²¹Êä³öµÄÍ¨µÀÆð×÷ÓÃ)
+  61   2          PWMA_PS = PWMx->PWM_PS_SW;      //ÇÐ»»IO
+  62   2          PWMA_ENO = PWMx->PWM_EnoSelect; //Êä³öÍ¨µÀÑ¡Ôñ
+  63   2          PWMA_DeadTime(PWMx->PWM_DeadTime);  //ËÀÇø·¢ÉúÆ÷ÉèÖÃ
+  64   2          
+  65   2          if(PWMx->PWM_BrakeEnable == ENABLE) PWMA_BrakeEnable(); //¿ªÆôÉ²³µÊäÈë
+  66   2          else    PWMA_BrakeDisable();    //½ûÖ¹É²³µÊäÈë
+  67   2          if(PWMx->PWM_MainOutEnable == ENABLE) PWMA_BrakeOutputEnable(); //Ö÷Êä³öÊ¹ÄÜ
+  68   2          else    PWMA_BrakeOutputDisable();    //Ö÷Êä³ö½ûÖ¹
+  69   2          if(PWMx->PWM_CEN_Enable == ENABLE)  PWMA_CEN_Enable();  //Ê¹ÄÜ¼ÆÊýÆ÷
+  70   2          else    PWMA_CEN_Disable();   //½ûÖ¹¼ÆÊýÆ÷
+  71   2          
+  72   2          EAXRAM();   /* MOVX A,@DPTR/MOVX @DPTR,AÖ¸ÁîµÄ²Ù×÷¶ÔÏóÎªÀ©Õ¹RAM(XRAM) */
+  73   2          return  0;
+  74   2        }
+  75   1      
+  76   1      //  if(PWM == PWMB)
+  77   1      //  {
+  78   1      //    EAXSFR();   /* MOVX A,@DPTR/MOVX @DPTR,AÖ¸ÁîµÄ²Ù×÷¶ÔÏóÎªÀ©Õ¹SFR(XSFR) */
+  79   1      //    
+  80   1      //    if(PWMx->PWM5_SetPriority <= Priority_3)  PWM5_Priority(PWMx->PWM5_SetPriority);  //Ö¸¶¨ÖÐ¶ÏÓÅÏÈ¼¶(µÍµ½¸
+             -ß) Priority_0,Priority_1,Priority_2,Priority_3
+  81   1      //    
+  82   1      //    PWMB_CCER1_Disable();   //¹Ø±ÕËùÓÐÊäÈë²¶»ñ/±È½ÏÊä³ö
+  83   1      //    PWMB_CCER2_Disable();   //¹Ø±ÕËùÓÐÊäÈë²¶»ñ/±È½ÏÊä³ö
+  84   1      //    PWMB_OC5ModeSet(PWMx->PWM5_Mode);   //ÉèÖÃÊä³ö±È½ÏÄ£Ê½
+  85   1      //    PWMB_OC6ModeSet(PWMx->PWM6_Mode);   //ÉèÖÃÊä³ö±È½ÏÄ£Ê½
+  86   1      //    PWMB_OC7ModeSet(PWMx->PWM7_Mode);   //ÉèÖÃÊä³ö±È½ÏÄ£Ê½
+  87   1      //    PWMB_OC8ModeSet(PWMx->PWM8_Mode);   //ÉèÖÃÊä³ö±È½ÏÄ£Ê½
+  88   1      //    if(PWMx->PWM_Reload == ENABLE)  PWMB_OC5_ReloadEnable();  //Êä³ö±È½ÏµÄÔ¤×°ÔØÊ¹ÄÜ
+  89   1      //    else    PWMB_OC5_RelosdDisable(); //½ûÖ¹Êä³ö±È½ÏµÄÔ¤×°ÔØ
+  90   1      //    if(PWMx->PWM_Fast == ENABLE)  PWMB_OC5_FastEnable();    //Êä³ö±È½Ï¿ìËÙ¹¦ÄÜÊ¹ÄÜ
+  91   1      //    else    PWMB_OC5_FastDisable(); //½ûÖ¹Êä³ö±È½Ï¿ìËÙ¹¦ÄÜ
+  92   1      //    
+  93   1      //    if(PWMx->PWM_CC5Enable == ENABLE) PWMB_CC5E_Enable();     //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  94   1      //    else    PWMB_CC5E_Disable();  //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+  95   1      //    if(PWMx->PWM_CC6Enable == ENABLE) PWMB_CC6E_Enable();     //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  96   1      //    else    PWMB_CC6E_Disable();  //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+  97   1      //    if(PWMx->PWM_CC7Enable == ENABLE) PWMB_CC7E_Enable();     //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+  98   1      //    else    PWMB_CC7E_Disable();  //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+  99   1      //    if(PWMx->PWM_CC8Enable == ENABLE) PWMB_CC8E_Enable();     //¿ªÆôÊäÈë²¶»ñ/±È½ÏÊä³ö
+ 100   1      //    else    PWMB_CC8E_Disable();  //¹Ø±ÕÊäÈë²¶»ñ/±È½ÏÊä³ö
+ 101   1      //    
+ 102   1      //    PWMB_AutoReload(PWMx->PWM_Period);
+ 103   1      //    PWMB_Duty5(PWMx->PWM5_Duty);
+ 104   1      //    PWMB_Duty6(PWMx->PWM6_Duty);
+ 105   1      //    PWMB_Duty7(PWMx->PWM7_Duty);
+ 106   1      //    PWMB_Duty8(PWMx->PWM8_Duty);
+ 107   1      //    
+ 108   1      //    PWMB_CCPCBPreloaded(PWMx->PWM_PreLoad); //²¶»ñ/±È½ÏÔ¤×°ÔØ¿ØÖÆÎ»(¸ÃÎ»Ö»¶Ô¾ßÓÐ»¥²¹Êä³öµÄÍ¨µÀÆð×÷ÓÃ)
+ 109   1      //    PWMB_PS = PWMx->PWM_PS_SW;      //ÇÐ»»IO
+ 110   1      //    PWMB_ENO = PWMx->PWM_EnoSelect; //Êä³öÍ¨µÀÑ¡Ôñ
+ 111   1      //    PWMB_DeadTime(PWMx->PWM_DeadTime);  //ËÀÇø·¢ÉúÆ÷ÉèÖÃ
+C51 COMPILER V9.60.0.0   PWM                                                               12/29/2022 16:59:29 PAGE 3   
+
+ 112   1      //    
+ 113   1      //    if(PWMx->PWM_BrakeEnable == ENABLE) PWMB_BrakeEnable(); //¿ªÆôÉ²³µÊäÈë
+ 114   1      //    else    PWMB_BrakeDisable();    //½ûÖ¹É²³µÊäÈë
+ 115   1      //    if(PWMx->PWM_MainOutEnable == ENABLE) PWMB_BrakeOutputEnable(); //Ö÷Êä³öÊ¹ÄÜ
+ 116   1      //    else    PWMB_BrakeOutputDisable();    //Ö÷Êä³ö½ûÖ¹
+ 117   1      //    if(PWMx->PWM_CEN_Enable == ENABLE)  PWMB_CEN_Enable();  //Ê¹ÄÜ¼ÆÊýÆ÷
+ 118   1      //    else    PWMB_CEN_Disable();   //½ûÖ¹¼ÆÊýÆ÷
+ 119   1      //    
+ 120   1      //    EAXRAM();   /* MOVX A,@DPTR/MOVX @DPTR,AÖ¸ÁîµÄ²Ù×÷¶ÔÏóÎªÀ©Õ¹RAM(XRAM) */
+ 121   1      //    return  0;
+ 122   1      //  }
+ 123   1      
+ 124   1        return  2;  //´íÎó
+ 125   1      }
+ 126          
+ 127          /*********************************************************/
+ 128          
+ 129          /******************* PWM Õ¼¿Õ±ÈÉèÖÃº¯Êý *******************/
+ 130          void UpdatePwm(u8 PWM, PWMx_Duty *PWMx)
+ 131          {
+ 132   1        EAXSFR();   /* MOVX A,@DPTR/MOVX @DPTR,AÖ¸ÁîµÄ²Ù×÷¶ÔÏóÎªÀ©Õ¹SFR(XSFR) */
+ 133   1      
+ 134   1        if(PWM == PWMA)
+ 135   1        {
+ 136   2      //    PWMA_Duty1(PWMx->PWM1_Duty);
+ 137   2          PWMA_Duty2(PWMx->PWM2_Duty);
+ 138   2      //    PWMA_Duty3(PWMx->PWM3_Duty);
+ 139   2      //    PWMA_Duty4(PWMx->PWM4_Duty);
+ 140   2        }
+ 141   1      //  else
+ 142   1      //  {
+ 143   1      //    PWMB_Duty5(PWMx->PWM5_Duty);
+ 144   1      //    PWMB_Duty6(PWMx->PWM6_Duty);
+ 145   1      //    PWMB_Duty7(PWMx->PWM7_Duty);
+ 146   1      //    PWMB_Duty8(PWMx->PWM8_Duty);
+ 147   1      //  }
+ 148   1        
+ 149   1        EAXRAM();   /* MOVX A,@DPTR/MOVX @DPTR,AÖ¸ÁîµÄ²Ù×÷¶ÔÏóÎªÀ©Õ¹RAM(XRAM) */
+ 150   1      }
+ 151          
+ 152          /*********************************************************/
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    381    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

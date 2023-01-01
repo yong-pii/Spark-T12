@@ -1,0 +1,331 @@
+C51 COMPILER V9.60.0.0   INTERFACE                                                         12/31/2022 21:25:42 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE INTERFACE
+OBJECT MODULE PLACED IN .\list\Interface.obj
+COMPILER INVOKED BY: C:\keil\Keil C51\C51\BIN\C51.EXE SRC\Interface.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\SRC) DEBUG
+                    - OBJECTEXTEND PRINT(.\list\Interface.lst) TABS(2) OBJECT(.\list\Interface.obj)
+
+line level    source
+
+   1          #include "interface.h"
+   2          
+   3          
+   4          extern PWMx_Duty PWMA_Duty;
+   5          //extern u8  xdata   tmp[Max_Length];        //EEPROM操作缓冲
+   6          extern u16 Ch1_vinput;
+   7          extern u16 present_temp, expect_temp, temp_T12,NTC_temp_v; //当前温度，期望温度
+   8          extern u16 Kp, Ti, Td;
+   9          extern u16 set_sleep_time;  //设置休眠时间
+  10          static  u8 z = 0;
+  11          extern u16 sleep_time_s, set_sleep_time;  //休眠计时
+  12          /***********************************************************
+  13          *@fuction :show_Init
+  14          *@brief   :初始显示界面
+  15          *@param   :--
+  16          *@return  :void
+  17          *@author  :--xptx
+  18          *@date    :2022-10-03
+  19          ***********************************************************/
+  20          
+  21          void show_Init(void)
+  22          {
+  23   1          OLED_ShowString(8, 1, "Spark_T12", 16);
+  24   1          delay_ms(1000);
+  25   1      } 
+  26          
+  27          
+  28          void show_1(void)
+  29          {
+  30   1          u8 i;
+  31   1          i++;
+  32   1          if(key_add() == 1)
+  33   1          {
+  34   2              expect_temp += 10;
+  35   2          }
+  36   1          else if(key_lessen() == 1)
+  37   1          {
+  38   2              expect_temp -= 10;
+  39   2          }
+  40   1      
+  41   1          //OLED_ShowNum(45, 0, NTC_temp_v, 4, 8); //显示当前温度
+  42   1          OLED_ShowNum(5, 0, expect_temp, 3, 22); //显示期望温度
+  43   1            
+  44   1         //OLED_ShowNum(0, 0, temp_T12, 4, 16); //显示期望温度
+  45   1      
+  46   1          
+  47   1          OLED_ShowNum(100, 2, (abs(expect_temp - temp_T12) * 100) / expect_temp, 3, 8);   //显示温度差值百
+             -分比%
+  48   1          OLED_ShowString(120, 2, "%", 8);
+  49   1          if(i == 10)
+  50   1          {
+  51   2              OLED_ShowNum(100, 0, ((PWMA_Duty.PWM2_Duty)) / 655, 3, 8);    //显示功率百分比%
+  52   2              i = 0;
+  53   2          }
+C51 COMPILER V9.60.0.0   INTERFACE                                                         12/31/2022 21:25:42 PAGE 2   
+
+  54   1          OLED_ShowString(120, 0, "%", 8);
+  55   1          
+  56   1          if(expect_temp>450) expect_temp = 450;
+  57   1          if(expect_temp<100) expect_temp = 100;
+  58   1          //data_send(present_temp);
+  59   1      }
+  60          
+  61          void show_2(void)  //电源电压选择界面
+  62          {
+  63   1          static u8 i[5] = {5, 9, 12, 15, 20}, x = 0;
+  64   1         
+  65   1          //  u16 v;
+  66   1          if(key_add() == 1)
+  67   1          {
+  68   2              if(x<5)x++;
+  69   2              //OLED_Clear();
+  70   2            power(i[x]);
+  71   2              OLED_ShowNum(70, 2, i[x], 2, 16);
+  72   2            power_record();
+  73   2              delay_ms(200);
+  74   2          }
+  75   1          else if(key_lessen() == 1)
+  76   1          {
+  77   2              if(x>0&&x<5)x--;
+  78   2              //OLED_Clear();
+  79   2            power(i[x]);
+  80   2              OLED_ShowNum(70, 2, i[x], 2, 16);
+  81   2            power_record();
+  82   2              delay_ms(200);
+  83   2          }
+  84   1          if(x > 4) x = 0;
+  85   1          
+  86   1          //v= 0.03867 * Get_ADCResult(1)/1;
+  87   1          OLED_ShowNum(70, 0, Ch1_vinput, 5, 16); //输入电压
+  88   1          //OLED_ShowNum(0,0,0.03867 * Get_ADCResult(1)/1,2,16);  //输入电压
+  89   1      
+  90   1      
+  91   1      }
+  92          
+  93          void show_3(void)
+  94          {
+  95   1          u8 i = 0;
+  96   1          static u8 j, k;
+  97   1          OLED_ShowNum(105, 0, Kp, 3,16); //显示Kp数值
+  98   1         // OLED_ShowNum(118, 0,(Kp*10)%10, 1, 8); //显示Kp数值 
+  99   1        
+ 100   1          OLED_ShowNum( 45, 2, Ti, 2, 16); //显示Ti数值
+ 101   1          OLED_ShowNum(110, 2, Td, 2, 16); //显示Td数值
+ 102   1      
+ 103   1          OLED_ShowString(65, 2, "  ", 16); //消隐Td的">>"
+ 104   1          OLED_ShowString( 0, 2, "  ", 16); //消隐Ti的">>"
+ 105   1          OLED_ShowString(65, 0, ">>", 16); //kP的">>"
+ 106   1      
+ 107   1          while(i == 0) //调整Kp
+ 108   1          {
+ 109   2              j = key_add();
+ 110   2              k = key_lessen();
+ 111   2              if(j == 1) Kp=Kp+1; //识别到up短按,Kp+1
+ 112   2              else if(k == 1) Kp-=1; //识别到down短按,Kp-1
+ 113   2              else if(j == 2) i = 1; //识别到up长按,切换到Td
+ 114   2              //    else
+ 115   2              //    if(k==2) i=2;   //识别到down长按,切换到Ti
+C51 COMPILER V9.60.0.0   INTERFACE                                                         12/31/2022 21:25:42 PAGE 3   
+
+ 116   2      
+ 117   2              OLED_ShowNum(105, 0, Kp, 3,16); //显示Kp数值
+ 118   2              if(key_mode() == 1)
+ 119   2              {
+ 120   3                  z++;
+ 121   3                  i = 3;
+ 122   3              }
+ 123   2              if(Kp > 150) Kp = 150;
+ 124   2              if(Kp < 1) Kp = 1;
+ 125   2              if((sleep_time_s/60)>=set_sleep_time)  sleep_mode();  //计时时间大于设置休眠时间，进入�
+             -��眠模式，期间关闭PWM         
+ 126   2          }
+ 127   1      
+ 128   1          OLED_ShowString(65, 2, "  ", 16); //消隐Td的">>"
+ 129   1          OLED_ShowString(0, 2, ">>", 16); //消隐Ti的">>"
+ 130   1          OLED_ShowString(65, 0, "  ", 16); //消隐kP的">>"
+ 131   1      
+ 132   1          while(i == 1) //调整Ti
+ 133   1          {
+ 134   2              j = key_add();
+ 135   2              k = key_lessen();
+ 136   2              if(j == 1) Ti++; //识别到up短按,Kp+1
+ 137   2              else if(k == 1) Ti--; //识别到down短按,Kp-1
+ 138   2              else if(j == 2) i = 2; //识别到up长按,切换到Td
+ 139   2              //    else
+ 140   2              //    if(k==2) i=0;  //识别到down长按,切换到Ti
+ 141   2      
+ 142   2              OLED_ShowNum(45, 2, (u16)Ti, 2, 16); //显示Ti数值
+ 143   2              if(key_mode() == 1)
+ 144   2              {
+ 145   3                  z++;
+ 146   3                  i = 3;
+ 147   3              }
+ 148   2              if(Ti > 100) Ti = 100;
+ 149   2              if(Ti < 0) Ti = 0;
+ 150   2              if((sleep_time_s/60)>=set_sleep_time)  sleep_mode();  //计时时间大于设置休眠时间，进入�
+             -��眠模式，期间关闭PWM         
+ 151   2          }
+ 152   1      
+ 153   1          OLED_ShowString(65, 2, ">>", 16); //消隐Td的">>"
+ 154   1          OLED_ShowString(0, 2, "  ", 16); //消隐Ti的">>"
+ 155   1          OLED_ShowString(65, 0, "  ", 16); //消隐kP的">>"
+ 156   1      
+ 157   1          while(i == 2) //调整Td
+ 158   1          {
+ 159   2              j = key_add();
+ 160   2              k = key_lessen();
+ 161   2      
+ 162   2              if(j == 1) Td++; //识别到up短按,Kp+1
+ 163   2              else if(k == 1) Td--; //识别到down短按,Kp-1
+ 164   2              else if(j == 2) i = 0; //识别到up长按,切换到Kp
+ 165   2              //    else
+ 166   2              //    if(k==2) i=1;  //识别到down长按,切换到Ti
+ 167   2      
+ 168   2              OLED_ShowNum(110, 2, (u16)Td, 2, 16); //显示Td数值
+ 169   2              if(key_mode() == 1)
+ 170   2              {
+ 171   3                  z++;
+ 172   3                  i = 3;
+ 173   3              }
+ 174   2              if(Td > 100) Td = 100;
+ 175   2              if(Td < 0) Td = 0;
+C51 COMPILER V9.60.0.0   INTERFACE                                                         12/31/2022 21:25:42 PAGE 4   
+
+ 176   2              if((sleep_time_s/60)>=set_sleep_time)  sleep_mode();  //计时时间大于设置休眠时间，进入�
+             -��眠模式，期间关闭PWM         
+ 177   2          }
+ 178   1      
+ 179   1      }
+ 180          
+ 181          /***********************************************************
+ 182          *@fuction :show_4
+ 183          *@brief   :休眠时间设置界面
+ 184          *@param   :--
+ 185          *@return  :void
+ 186          *@author  :--xptx
+ 187          *@date    :2022-10-24
+ 188          ***********************************************************/
+ 189          void show_4(void)
+ 190          {
+ 191   1          //
+ 192   1        OLED_ShowNum(40, 2,set_sleep_time, 2, 16); //显示设置无状态自动休眠时长
+ 193   1        
+ 194   1          if(key_add() == 1)
+ 195   1          {
+ 196   2            set_sleep_time++;
+ 197   2          }
+ 198   1          else if(key_lessen() == 1)
+ 199   1          {
+ 200   2           set_sleep_time--;
+ 201   2          }
+ 202   1          if(set_sleep_time<1) set_sleep_time=1;  //限制休眠时间大于一分钟
+ 203   1          
+ 204   1          OLED_ShowNum(0,2,sleep_time_s,3,16);
+ 205   1      }
+ 206          
+ 207          
+ 208          /***********************************************************
+ 209          *@fuction :interface_show
+ 210          *@brief   :
+ 211          *@param   :--
+ 212          *@return  :void
+ 213          *@author  :--xptx
+ 214          *@date    :2022-10-24
+ 215          ***********************************************************/
+ 216          void interface_show(void)
+ 217          {
+ 218   1      
+ 219   1      
+ 220   1          OLED_Clear();
+ 221   1          OLED_ShowChinese(40, 1, 0, 12); //℃
+ 222   1          OLED_ShowString(70, 2, "Eeeor", 8); //功率百分比%
+ 223   1          OLED_ShowString(70, 0, "power", 8); //功率百分比%
+ 224   1          while(z == 0)  //界面1
+ 225   1          {
+ 226   2              if((sleep_time_s/60)>=set_sleep_time)  sleep_mode();  //计时时间大于设置休眠时间，进入�
+             -��眠模式，期间关闭PWM
+ 227   2              show_1();
+ 228   2              if(key_mode() == 1) z++;
+ 229   2          }
+ 230   1          OLED_Clear();
+ 231   1          while(z == 1)  //界面2 设置供电电压
+ 232   1          {
+ 233   2              bit f=0;
+ 234   2            
+ 235   2              if((sleep_time_s/60)>=set_sleep_time)  sleep_mode();  //计时时间大于设置休眠时间，进入�
+C51 COMPILER V9.60.0.0   INTERFACE                                                         12/31/2022 21:25:42 PAGE 5   
+
+             -��眠模式，期间关闭PWM     
+ 236   2              OLED_ShowChinese(0,0,13, 12); //当前电压
+ 237   2              OLED_ShowChinese(14,0,14, 12); 
+ 238   2              OLED_ShowChinese(28,0,17, 12); 
+ 239   2              OLED_ShowChinese(42,0,18, 12);      
+ 240   2              OLED_ShowString(55, 0, ":", 16);
+ 241   2            
+ 242   2              OLED_ShowChinese(0,2,15, 12); //输入电压
+ 243   2              OLED_ShowChinese(14,2,16, 12); 
+ 244   2              OLED_ShowChinese(28,2,17, 12); 
+ 245   2              OLED_ShowChinese(42,2,18, 12);      
+ 246   2              OLED_ShowString( 55,2, ":", 16);      
+ 247   2            
+ 248   2            if(!f){ f=1; OLED_ShowNum(70, 2,v_data_out(), 2, 16); }
+ 249   2            
+ 250   2              OLED_ShowString(110, 0, "mV", 16);
+ 251   2              OLED_ShowString(110, 2, "V", 16);     
+ 252   2              show_2();
+ 253   2              if(key_mode() == 1) z++;
+ 254   2              power_record();
+ 255   2          }
+ 256   1          OLED_Clear();
+ 257   1          while(z == 2)  //界面3
+ 258   1          {
+ 259   2          
+ 260   2              OLED_ShowString(10, 0, "PID:", 16);
+ 261   2              OLED_ShowString(85, 0, "Kp:", 16);
+ 262   2              OLED_ShowString(20, 2, "Ti:", 16);
+ 263   2              OLED_ShowString(85, 2, "Td:", 16);
+ 264   2              show_3();
+ 265   2              if(key_mode() == 1) z++;
+ 266   2          }
+ 267   1          OLED_Clear();   
+ 268   1          while(z == 3) //界面4
+ 269   1          {
+ 270   2              if((sleep_time_s/60)>=set_sleep_time)  sleep_mode();  //计时时间大于设置休眠时间，进入�
+             -��眠模式，期间关闭PWM     
+ 271   2           OLED_ShowChinese( 0, 0,10, 12); //设置无操作自动休眠
+ 272   2           OLED_ShowChinese(14, 0,11, 12); // 
+ 273   2           OLED_ShowChinese(28, 0, 1, 12); //
+ 274   2           OLED_ShowChinese(42, 0, 2, 12); //
+ 275   2           OLED_ShowChinese(56, 0, 3, 12); //
+ 276   2           OLED_ShowChinese(70, 0, 4, 12); //
+ 277   2           OLED_ShowChinese(84, 0, 5, 12); //
+ 278   2           OLED_ShowChinese(98, 0, 6, 12); //
+ 279   2           OLED_ShowChinese(112,0, 7, 12); // 
+ 280   2      
+ 281   2           OLED_ShowString(70, 2, "Min", 16); //min
+ 282   2           show_4();    
+ 283   2            
+ 284   2           if(key_mode() == 1) z++;
+ 285   2          }
+ 286   1      
+ 287   1          if(z > 3) z = 0;
+ 288   1      
+ 289   1      }
+ 290          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2312    ----
+   CONSTANT SIZE    =     58    ----
+C51 COMPILER V9.60.0.0   INTERFACE                                                         12/31/2022 21:25:42 PAGE 6   
+
+   XDATA SIZE       =      9       2
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

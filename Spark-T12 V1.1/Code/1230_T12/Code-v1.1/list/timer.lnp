@@ -1,0 +1,17 @@
+".\list\main.obj",
+".\list\GPIO.obj",
+".\list\delay.obj",
+".\list\UART.obj",
+".\list\timer.obj",
+".\list\ADC.obj",
+".\list\oled.obj",
+".\list\beep.obj",
+".\list\key.obj",
+".\list\Ch224d.obj",
+".\list\EEPROM.obj",
+".\list\Interface.obj",
+".\list\PWM.obj",
+".\list\Spark_T12_PID.obj",
+".\list\sleep.obj" 
+TO ".\list\timer" 
+PRINT(".\list\timer.m51") RAMSIZE(256) 
