@@ -191,10 +191,6 @@ void show_4(void)
     }
 }
 
-void show_sleep(){
-    OLED_ShowString(15, 0, "sleep~", 22);
-}
-
 
 /***********************************************************
 *@fuction	:interface_show
@@ -307,9 +303,12 @@ void interface_show(void)
     OLED_Clear();		//清屏
     //休眠模式
     while (4 == z){
-        sleep_mode();
-        show_sleep();
-        if(key_mode() == 1) z = 0;
+        sleep_forced(1);
+        if(key_mode() == 1) {
+            z = 0;
+            sleep_forced(0);
+            break;
+        }
     }
 
     if(z > 4) z = 0;

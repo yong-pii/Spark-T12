@@ -75,5 +75,16 @@ void sleep_mode(void)
         }
     }
     sleep_fig = 0; //休眠结束，标志位置0
+}
 
+void sleep_forced(int sleep) {
+    if (1 == sleep) {
+        OLED_Clear();//清屏
+        delay_ms(10);
+        sleep_fig = 1; //休眠标志位置一
+        P12 = 0; //拉低pwm输出IO口
+        sleep_show();  //休眠显示界面
+    } else {
+        sleep_fig = 0; //休眠结束，标志位置0
+    }
 }
