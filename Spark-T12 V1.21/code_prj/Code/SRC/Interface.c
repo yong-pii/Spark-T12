@@ -192,7 +192,7 @@ void show_4(void)
 }
 
 void show_sleep(){
-    OLED_ShowString(0, 0, "sleep~", 16);
+    OLED_ShowString(15, 0, "sleep~", 22);
 }
 
 
