@@ -191,6 +191,10 @@ void show_4(void)
     }
 }
 
+void show_sleep(){
+    OLED_ShowString(0, 0, "sleep~", 16);
+}
+
 
 /***********************************************************
 *@fuction	:interface_show
@@ -214,7 +218,20 @@ void interface_show(void)
     while(z == 0)  //界面1
     {
         show_1();
-        if(key_mode() == 1) z++;
+        if(key_mode() == 1) {
+            //此处的time = 20为1秒
+            int time = 40;
+            while (key_mode() == 1 && time > 0) {
+                //按压到指定时间后仍为按压,判断为长按
+                delay_ms(50);
+                time--;
+            }
+            if (time == 0) {
+                z = 4;
+            } else {
+                z = 1;
+            }
+        }
         if((sleep_time_s / 60) >= set_sleep_time)  sleep_mode(); //计时时间大于设置休眠时间，进入休眠模式，期间关闭PWM
     }
     OLED_Clear();//清屏
@@ -287,8 +304,15 @@ void interface_show(void)
         if(key_mode() == 1) z++;
         if((sleep_time_s / 60) >= set_sleep_time)  sleep_mode(); //计时时间大于设置休眠时间，进入休眠模式，期间关闭PWM
     }
+    OLED_Clear();		//清屏
+    //休眠模式
+    while (4 == z){
+        sleep_mode();
+        show_sleep();
+        if(key_mode() == 1) z = 0;
+    }
 
-    if(z > 3) z = 0;
+    if(z > 4) z = 0;
 
 }
 
